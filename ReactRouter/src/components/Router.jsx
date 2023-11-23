@@ -1,11 +1,12 @@
 /* eslint-disable react/prop-types */
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Children } from 'react'
 import { EVENTS } from '../utils/consts'
 
 import { match } from 'path-to-regexp'
 
-export function Router ({ routes = [], defaultComponet: DefaultComponent = () => <h1>404</h1> }) {
+export function Router ({ children, routes = [], defaultComponet: DefaultComponent = () => <h1>404</h1> }) {
   const [currentPath, setCurrentPath] = useState(window.location.pathname)
+
   useEffect(() => {
     const onLocationchange = () => {
       setCurrentPath(window.location.pathname)
@@ -17,8 +18,17 @@ export function Router ({ routes = [], defaultComponet: DefaultComponent = () =>
       window.addEventListener(EVENTS.POPSTATE, onLocationchange)
     }
   }, [])
+
   let routeParams = {}
-  const Page = routes.find(({ path }) => {
+  // add routes from children <Route/> components
+  const routesFromChildren = Children.map(children, ({ props, type }) => {
+    const { name } = type
+    const isRoute = name === 'Route'
+    return isRoute ? props : null
+  })
+
+  const routesToUse = routes.concat(routesFromChildren)
+  const Page = routesToUse.find(({ path }) => {
     if (path === currentPath) return true
     // path to regex para rutas dinamicas
     const mathcheUrl = match(path, { decode: decodeURIComponent })
